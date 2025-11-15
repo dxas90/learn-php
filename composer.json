@@ -1,0 +1,15 @@
+{
+    "name": "dxas90/learn-php-api",
+    "description": "Small PHP microservice API (Symfony components) mirroring the Flask app endpoints",
+    "require": {
+        "php": "^8.1 || ^8.2 || ^8.3",
+        "symfony/http-foundation": "^6.3",
+        "symfony/routing": "^6.3",
+        "symfony/polyfill-ctype": "^1.27"
+    },
+    "autoload": {
+        "psr-4": {
+            "LearnPhp\\": "src/"
+        }
+    }
+}

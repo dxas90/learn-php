@@ -1,0 +1,29 @@
+suite: test network policy
+templates:
+  - networkpolicy.yaml
+tests:
+  - it: should create NetworkPolicy
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-learn-php
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: learn-php
+
+  - it: should have correct pod selector
+    asserts:
+      - isSubset:
+          path: spec.podSelector
+          content:
+            matchLabels: {}
+
+  - it: should include correct labels
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: learn-php
+            app.kubernetes.io/instance: RELEASE-NAME

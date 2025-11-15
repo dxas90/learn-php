@@ -1,0 +1,98 @@
+suite: test deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: should create deployment with default values
+    set:
+      autoscaling.enabled: false
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-learn-php
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: learn-php
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/dxas90/learn-php:latest
+
+  - it: should not set replicas when autoscaling is enabled
+    set:
+      autoscaling.enabled: true
+    asserts:
+      - isKind:
+          of: Deployment
+      - isNull:
+          path: spec.replicas
+
+  - it: should set custom replica count
+    set:
+      replicaCount: 3
+      autoscaling.enabled: false
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should use custom image tag
+    set:
+      image.tag: "v1.2.3"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/dxas90/learn-php:v1.2.3
+
+  - it: should set resource limits and requests
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 56Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 1m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 56Mi
+
+  - it: should configure http based liveness and readiness probes
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /healthz
+
+  - it: should include environment variables
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+
+  - it: should apply custom labels
+    set:
+      podLabels:
+        custom-label: custom-value
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            custom-label: custom-value
+
+  - it: should apply custom annotations
+    set:
+      podAnnotations:
+        custom-annotation: custom-value
+    asserts:
+      - equal:
+            path: spec.template.metadata.annotations.custom-annotation
+            value: custom-value

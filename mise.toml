@@ -1,0 +1,10 @@
+[tools]
+age = "latest"
+php = "latest"
+
+[settings]
+experimental = true
+
+[env]
+# Use the project name derived from the current directory
+PROJECT_NAME = "{{ config_root | basename }}"

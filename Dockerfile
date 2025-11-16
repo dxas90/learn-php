@@ -2,6 +2,9 @@ FROM php:8.2-cli
 
 WORKDIR /app
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y git unzip && rm -rf /var/lib/apt/lists/*
+
 # Install composer
 RUN set -eux; \
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"; \

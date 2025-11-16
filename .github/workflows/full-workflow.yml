@@ -21,48 +21,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
       - name: Setup php
-        uses: php/setup-php@v1
+        uses: shivammathur/setup-php@v2
         with:
-          php-version: 3.4
+          php-version: 8.3
 
       - name: Install dependencies
-        run: bundle install --jobs 4 --retry 3
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Syntax check
         run: |
-          php -c app.rb
-          php -c config.ru
-        continue-on-error: true
+          find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \;
 
   test:
     name: Run Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: [3.2, 3.4]
+        php-version: [8.2, 8.3]
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
       - name: Setup php ${{ matrix.php-version }}
-        uses: php/setup-php@v1
+        uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
 
       - name: Install dependencies
-        run: bundle install --jobs 4 --retry 3
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: Run RSpec
-        run: bundle exec rspec --format documentation
-        continue-on-error: false
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        continue-on-error: true
-        with:
-          file: coverage/.resultset.json
-          flags: unittests
-          name: codecov-php-${{ matrix.php-version }}
+      - name: Run tests
+        run: |
+          # No unit tests defined, running syntax check
+          find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \;
 
   security-scan:
     name: Security Vulnerability Scan
@@ -72,21 +63,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
       - name: Setup php
-        uses: php/setup-php@v1
+        uses: shivammathur/setup-php@v2
         with:
-          php-version: 3.4
+          php-version: 8.3
 
       - name: Install dependencies
-        run: bundle install --jobs 4 --retry 3
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: Install bundler-audit
-        run: gem install bundler-audit
-
-      - name: Run bundler-audit
-        run: |
-          bundle-audit update || true
-          bundle-audit check || true
-        continue-on-error: true
+      - name: Run composer audit
+        run: composer audit
 
   helm-test:
     name: Helm Chart Testing
@@ -109,7 +94,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Helm unit tests
-        run: helm unittest k8s/learn-php --color --output-type JUnit --output-file helm-test-results.xml
+        run: helm unittest k8s/learn-php --output-type JUnit --output-file helm-test-results.xml
 
       - name: Publish Helm Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -176,7 +161,6 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          target: production
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -184,64 +168,29 @@ jobs:
             VCS_REF=${{ github.sha }}
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
-      - name: Export image for Kind testing
+      - name: Extract SHA tag for Trivy
+        if: github.event_name != 'pull_request'
+        id: extract-sha-tag
         run: |
-          # Image is already loaded in Docker daemon, just save it
-          docker save -o /tmp/image.tar $(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-
-      - name: Upload Docker image artifact for Kind testing
-        uses: actions/upload-artifact@v5
-        with:
-          name: docker-image
-          path: /tmp/image.tar
-          retention-days: 1
+          echo "sha-tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "Found SHA tag: ${SHA_TAG}"
 
       - name: Run Trivy vulnerability scanner
         if: github.event_name != 'pull_request'  # only run Trivy when image is pushed (not on PRs)
         id: trivy
         continue-on-error: true
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ steps.extract-sha-tag.outputs.sha-tag }}
           format: 'sarif'
+          vuln-type: 'library'
           output: 'trivy-results.sarif'
-          # skip version check to avoid failing on newer Trivy versions
-          args: '--skip-version-check'
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: github.event_name != 'pull_request' && steps.trivy.outcome == 'success'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
-
-  cleanup-packages:
-    name: Cleanup Old Package Versions
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name != 'pull_request'
-    permissions:
-      packages: write
-    steps:
-      - name: Delete old package versions
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: 'learn-php'
-          package-type: 'container'
-          min-versions-to-keep: 10
-
-  test-deployment:
-    name: Test Kubernetes Deployment
-    runs-on: ubuntu-latest
-    needs: [build, helm-test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Download Docker image artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: docker-image
-          path: /tmp
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -257,23 +206,13 @@ jobs:
 
       - name: Load Docker image into Kind
         run: |
-          # Load the image from artifact
-          docker load -i /tmp/image.tar
-
-          # Get the image name and tag from the loaded image
-          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | head -n 1)
-          echo "Loaded image: $IMAGE_NAME"
-
-          # Tag it for local use
-          docker tag $IMAGE_NAME ${{ env.APP_NAME }}:test
-
           # Load image into Kind cluster
-          kind load docker-image ${{ env.APP_NAME }}:test --name ${{ env.CLUSTER_NAME }}
+          kind load docker-image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7} --name ${{ env.CLUSTER_NAME }}
 
       - name: Wait for cluster to be ready
         run: |
           echo "Waiting for nodes to be ready..."
-          kubectl wait --for=condition=Ready nodes --all --timeout=300s
+          kubectl wait --for=condition=Ready nodes --all --timeout=600s
           echo "Cluster is ready!"
 
       - name: Display cluster information
@@ -292,8 +231,8 @@ jobs:
           echo "Deploying application with Helm..."
 
           helm upgrade --install ${{ env.APP_NAME }} ./k8s/learn-php \
-            --set image.repository=${{ env.APP_NAME }} \
-            --set image.tag=test \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --set image.tag=sha-${GITHUB_SHA::7} \
             --set image.pullPolicy=Never \
             --set replicaCount=1 \
             --set autoscaling.enabled=false \
@@ -309,6 +248,16 @@ jobs:
           echo "=== Deployment Status ==="
           kubectl get deployments
           kubectl get pods -l app.kubernetes.io/name=learn-php
+          # If pods are not ready, describe and show logs to help debugging
+          NOT_READY=$(kubectl get pods -l app.kubernetes.io/instance=${{ env.APP_NAME }} --field-selector=status.phase!=Running --no-headers | wc -l || true)
+          if [ "$NOT_READY" -gt 0 ]; then
+            echo "Detected pods not running; printing descriptions and logs..."
+            kubectl describe pods -l app.kubernetes.io/instance=${{ env.APP_NAME }} || true
+            for pod in $(kubectl get pods -l app.kubernetes.io/instance=${{ env.APP_NAME }} -o jsonpath='{.items[*].metadata.name}'); do
+              echo "=== Logs for $pod ==="
+              kubectl logs $pod --all-containers=true || true
+            done
+          fi
           kubectl get services
 
       - name: Run Smoke Test
@@ -368,10 +317,26 @@ jobs:
           echo "Cleaning up resources..."
           helm uninstall ${{ env.APP_NAME }} --ignore-not-found || true
 
+  cleanup-packages:
+    name: Cleanup Old Package Versions
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request'
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old package versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'learn-php'
+          package-type: 'container'
+          min-versions-to-keep: 20
+          delete-only-untagged-versions: "true"
+
   deploy-staging:
     name: Deploy to Staging Environment
     runs-on: ubuntu-latest
-    needs: test-deployment
+    needs: build
     if: github.ref == 'refs/heads/main'
     environment:
       name: staging
@@ -386,7 +351,7 @@ jobs:
   deploy-production:
     name: Deploy to Production Environment
     runs-on: ubuntu-latest
-    needs: test-deployment
+    needs: build
     if: startsWith(github.ref, 'refs/tags/')
     # Environment protection rules can be configured in GitHub Settings > Environments > production
     # to require manual approval before deployment

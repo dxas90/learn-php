@@ -52,10 +52,9 @@ autoscaling:
 
 resources:
   limits:
-    cpu: 1m
-    memory: 56Mi
+    memory: 128Mi
   requests:
-    cpu: 1m
+    cpu: 100m
     memory: 56Mi
 
 chart:

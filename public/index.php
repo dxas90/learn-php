@@ -33,7 +33,9 @@ $APP_INFO = [
 // For nginx: access_log off; in server block
 // For Apache: CustomLog /dev/null combined in VirtualHost
 if (getenv('APP_ENV') !== 'test') {
-    error_log(sprintf("[INFO] %s %s", $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']));
+    $timestamp = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+    error_log(sprintf("[INFO] %s %s %s - User-Agent: %s", $timestamp, $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'], $userAgent));
 }
 
 $routes = new RouteCollection();

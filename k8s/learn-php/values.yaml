@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: "ghcr.io/dxas90/learn-php"
-  pullPolicy: "IfNotPresent"
+  pullPolicy: "Always"
   tag: "latest"
 
 service:

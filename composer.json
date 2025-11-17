@@ -5,11 +5,22 @@
         "php": "^8.1 || ^8.2 || ^8.3",
         "symfony/http-foundation": "^6.3",
         "symfony/routing": "^6.3",
-        "symfony/polyfill-ctype": "^1.27"
+        "symfony/polyfill-ctype": "^1.27",
+        "open-telemetry/sdk": "^1.1",
+        "open-telemetry/exporter-otlp": "^1.1",
+        "promphp/prometheus_client_php": "^2.10",
+        "symfony/http-client": "^7.3",
+        "nyholm/psr7": "^1.8"
     },
     "autoload": {
         "psr-4": {
             "LearnPhp\\": "src/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true,
+            "tbachert/spi": true
         }
     }
 }

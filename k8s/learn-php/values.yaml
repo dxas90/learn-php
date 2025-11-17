@@ -66,6 +66,12 @@ env:
   # if env_file_path is provided in cookiecutter.json
   variables:
     APP_ENV: "production"
+    TMPDIR: "/tmp"
+
+# Environment configuration as a config map
+extraEnv:
+  OTEL_EXPORTER_OTLP_ENDPOINT: "tempo.observability.svc.cluster.local:4317"
+
 # Common secret and settings references
 common:
   secrets:

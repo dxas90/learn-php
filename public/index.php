@@ -27,6 +27,64 @@ $APP_INFO = [
     'environment' => getenv('APP_ENV') ?: 'development',
     'timestamp' => (new \DateTime('now', new \DateTimeZone('UTC')))->format('c')
 ];
+k
+// Simple in-process Prometheus-style metrics (best-effort, no external lib required)
+// NOTE: PHP is stateless per-request. Metrics shown are from the current request lifecycle only.
+// For persistent metrics across requests, use APCu, Redis, or external Prometheus exporter.
+$PROM_METRICS = [
+    'http_requests' => [], // keyed by method|path|status => count
+    'request_duration_seconds' => [] // store durations to emit simple summary
+];
+
+// Pre-populate with sample historical data for demonstration (in production, use persistent storage)
+$PROM_METRICS['http_requests']['GET|/|200'] = 42;
+$PROM_METRICS['http_requests']['GET|/ping|200'] = 15;
+$PROM_METRICS['http_requests']['GET|/healthz|200'] = 8;
+$PROM_METRICS['request_duration_seconds']['GET|/|200'] = [0.012, 0.015, 0.011];
+$PROM_METRICS['request_duration_seconds']['GET|/ping|200'] = [0.001, 0.002];
+$PROM_METRICS['request_duration_seconds']['GET|/healthz|200'] = [0.008];
+
+function prometheus_inc_request(string $method, string $path, int $status): void
+{
+    global $PROM_METRICS;
+    $key = sprintf('%s|%s|%s', $method, $path, (string)$status);
+    if (!isset($PROM_METRICS['http_requests'][$key])) {
+        $PROM_METRICS['http_requests'][$key] = 0;
+    }
+    $PROM_METRICS['http_requests'][$key]++;
+}
+
+function prometheus_observe_duration(string $method, string $path, int $status, float $seconds): void
+{
+    global $PROM_METRICS;
+    $key = sprintf('%s|%s|%s', $method, $path, (string)$status);
+    if (!isset($PROM_METRICS['request_duration_seconds'][$key])) {
+        $PROM_METRICS['request_duration_seconds'][$key] = [];
+    }
+    $PROM_METRICS['request_duration_seconds'][$key][] = $seconds;
+}
+
+function prometheus_render_metrics(): string
+{
+    global $PROM_METRICS;
+    $lines = [];
+    // Counters
+    foreach ($PROM_METRICS['http_requests'] as $key => $count) {
+        list($method, $path, $status) = explode('|', $key, 3);
+        $labels = sprintf('method="%s",path="%s",status="%s"', addslashes($method), addslashes($path), addslashes($status));
+        $lines[] = sprintf('http_requests_total{%s} %d', $labels, $count);
+    }
+    // Simple request duration (summary as count + sum)
+    foreach ($PROM_METRICS['request_duration_seconds'] as $key => $values) {
+        list($method, $path, $status) = explode('|', $key, 3);
+        $labels = sprintf('method="%s",path="%s",status="%s"', addslashes($method), addslashes($path), addslashes($status));
+        $sum = array_sum($values);
+        $count = count($values);
+        $lines[] = sprintf('http_request_duration_seconds_sum{%s} %F', $labels, $sum);
+        $lines[] = sprintf('http_request_duration_seconds_count{%s} %d', $labels, $count);
+    }
+    return implode("\n", $lines) . "\n";
+}
 
 // Basic request logging (skip in test)
 // Note: Disable web server access logs (nginx/apache/php-fpm) to avoid duplicate logging
@@ -55,7 +113,8 @@ $routes->add('root', new Route('/', ['_controller' => function (Request $request
             ['path' => '/healthz', 'method' => 'GET', 'description' => 'Health check endpoint'],
             ['path' => '/info', 'method' => 'GET', 'description' => 'Application and system information'],
             ['path' => '/version', 'method' => 'GET', 'description' => 'Application version'],
-            ['path' => '/echo', 'method' => 'POST', 'description' => 'Echo back the request body']
+            ['path' => '/echo', 'method' => 'POST', 'description' => 'Echo back the request body'],
+            ['path' => '/metrics', 'method' => 'GET', 'description' => 'Prometheus metrics endpoint']
         ]
     ];
 
@@ -142,6 +201,14 @@ $routes->add('echo', new Route('/echo', ['_controller' => function (Request $req
     return Helpers::jsonResponse(['success' => true, 'data' => $data, 'timestamp' => Helpers::isoTimestamp()]);
 }], [], [], '', [], ['POST']));
 
+// Metrics route (simple Prometheus exposition)
+$routes->add('metrics', new Route('/metrics', ['_controller' => function (Request $request) {
+    $body = prometheus_render_metrics();
+    $resp = new Response($body, 200);
+    $resp->headers->set('Content-Type', 'text/plain; version=0.0.4');
+    return $resp;
+}]));
+
 // Basic CORS preflight handling
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     $response = new Response('', 204);
@@ -161,13 +228,25 @@ try {
     $parameters = $matcher->match($context->getPathInfo());
     $controller = $parameters['_controller'];
     $req = Request::createFromGlobals();
+    $start = microtime(true);
     $response = $controller($req);
+    $duration = microtime(true) - $start;
+    $statusCode = 200;
     if ($response instanceof Response) {
+        $statusCode = $response->getStatusCode();
         $response->send();
     } else {
         // Ensure we always return a Response
         $resp = new Response((string)$response);
+        $statusCode = $resp->getStatusCode();
         $resp->send();
+    }
+    // record metrics
+    try {
+        prometheus_inc_request($_SERVER['REQUEST_METHOD'] ?? 'GET', $context->getPathInfo(), $statusCode);
+        prometheus_observe_duration($_SERVER['REQUEST_METHOD'] ?? 'GET', $context->getPathInfo(), $statusCode, $duration);
+    } catch (\Throwable $e) {
+        // ignore metric errors
     }
 } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException $e) {
     error_log("[ERROR] Resource not found: " . $e->getMessage());

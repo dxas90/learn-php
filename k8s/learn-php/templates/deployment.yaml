@@ -4,6 +4,13 @@ metadata:
   name: {{ include "base.fullname" . }}
   labels:
     {{- include "base.labels" . | nindent 4 }}
+  annotations:
+    prometheus.io/port: {{ .Values.service.port | quote }}
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    {{- with .Values.deploymentAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -13,8 +20,11 @@ spec:
       {{- include "base.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        prometheus.io/port: {{ .Values.service.port | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:

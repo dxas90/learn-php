@@ -30,7 +30,7 @@ $APP_INFO = [
 
 // Basic request logging (skip in test)
 if (getenv('APP_ENV') !== 'test') {
-    error_log(sprintf("[DEBUG] %s %s", $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']));
+    error_log(sprintf("[INFO] %s %s", $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']));
 }
 
 $routes = new RouteCollection();

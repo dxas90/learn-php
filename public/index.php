@@ -30,7 +30,7 @@ $APP_INFO = [
 
 // Basic request logging (skip in test)
 if (getenv('APP_ENV') !== 'test') {
-    error_log(sprintf("%s %s", $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']));
+    error_log(sprintf("[DEBUG] %s %s", $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']));
 }
 
 $routes = new RouteCollection();
@@ -165,9 +165,11 @@ try {
         $resp->send();
     }
 } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException $e) {
+    error_log("[ERROR] Resource not found: " . $e->getMessage());
     $resp = Helpers::jsonResponse(['error' => true, 'message' => 'Resource not found', 'statusCode' => 404, 'timestamp' => Helpers::isoTimestamp()], 404);
     $resp->send();
 } catch (\Exception $e) {
+    error_log("[ERROR] Internal Server Error: " . $e->getMessage());
     $msg = getenv('APP_ENV') === 'production' ? 'Internal Server Error' : $e->getMessage();
     $resp = Helpers::jsonResponse(['error' => true, 'message' => 'Internal Server Error', 'statusCode' => 500, 'timestamp' => Helpers::isoTimestamp(), 'details' => $msg], 500);
     $resp->send();

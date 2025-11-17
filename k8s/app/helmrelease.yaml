@@ -1,0 +1,54 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: learn-php
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./k8s/learn-php
+      sourceRef:
+        kind: GitRepository
+        name: learn-php
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values: # https://github.com/external-secrets/external-secrets/blob/main/deploy/charts/external-secrets/values.yaml
+    image:
+      repository: "ghcr.io/dxas90/learn-php"
+    env:
+      variables:
+        VARIABLES_THAT_SHOULD_BE_PRINTED: "LOG_LEVEL EVENT_THRESHOLD NODE_ENV PORT REDIS_DB REDIS_HOST REDIS_PORT STORAGE_DRIVER"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/imagerepository-image-v1.json
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: learn-php-imagerepository
+spec:
+  image: ghcr.io/dxas90/learn-php
+  interval: 5m
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/imagepolicy-image-v1.json
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: learn-php-policy
+spec:
+  imageRepositoryRef:
+    name: learn-php-imagerepository
+  policy:
+    semver:
+      range: 0.1.x
+---

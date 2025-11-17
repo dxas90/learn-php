@@ -29,6 +29,9 @@ $APP_INFO = [
 ];
 
 // Basic request logging (skip in test)
+// Note: Disable web server access logs (nginx/apache/php-fpm) to avoid duplicate logging
+// For nginx: access_log off; in server block
+// For Apache: CustomLog /dev/null combined in VirtualHost
 if (getenv('APP_ENV') !== 'test') {
     error_log(sprintf("[INFO] %s %s", $_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']));
 }

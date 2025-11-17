@@ -15,4 +15,6 @@ COPY . /app
 RUN if [ -f composer.json ]; then composer install --no-dev --no-interaction --no-scripts; fi
 
 EXPOSE 4567
-CMD ["php", "-S", "0.0.0.0:4567", "-t", "public"]
+# Suppress PHP built-in server access logs by redirecting stderr to /dev/null
+# Our application handles logging via error_log() in index.php
+CMD ["sh", "-c", "php -S 0.0.0.0:4567 -t public 2>/dev/null"]

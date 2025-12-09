@@ -21,11 +21,10 @@ RUN set -eux; \
 COPY . /app
 RUN if [ -f composer.json ]; then composer install --no-dev --no-interaction --no-scripts; fi
 
-# Configure nginx to use /tmp for writable directories and run as non-root
+# Configure nginx to use /tmp for writable directories (no user directive since we run as non-root)
 RUN mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
     chown -R phpuser:phpuser /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
-    echo 'user phpuser; \n\
-pid /tmp/nginx.pid; \n\
+    echo 'pid /tmp/nginx.pid; \n\
 error_log /dev/stderr warn; \n\
 events { \n\
     worker_connections 1024; \n\
@@ -64,8 +63,8 @@ http { \n\
 RUN sed -i 's/^;access.log = .*/access.log = \/dev\/null/' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/^;catch_workers_output = .*/catch_workers_output = yes/' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/^;clear_env = .*/clear_env = no/' /usr/local/etc/php-fpm.d/www.conf && \
-    sed -i 's/^user = .*/user = phpuser/' /usr/local/etc/php-fpm.d/www.conf && \
-    sed -i 's/^group = .*/group = phpuser/' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/^user = www-data/user = phpuser/' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/^group = www-data/group = phpuser/' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/^;pm.status_path = .*/pm.status_path = \/status/' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/^;ping.path = .*/ping.path = \/ping/' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/^;ping.response = .*/ping.response = pong/' /usr/local/etc/php-fpm.d/www.conf

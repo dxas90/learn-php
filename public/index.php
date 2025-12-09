@@ -27,7 +27,7 @@ $APP_INFO = [
     'environment' => getenv('APP_ENV') ?: 'development',
     'timestamp' => (new \DateTime('now', new \DateTimeZone('UTC')))->format('c')
 ];
-k
+
 // Simple in-process Prometheus-style metrics (best-effort, no external lib required)
 // NOTE: PHP is stateless per-request. Metrics shown are from the current request lifecycle only.
 // For persistent metrics across requests, use APCu, Redis, or external Prometheus exporter.

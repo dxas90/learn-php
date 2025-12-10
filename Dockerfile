@@ -78,5 +78,9 @@ EXPOSE 4567
 # Switch to non-root user
 USER phpuser
 
+# Health check using PHP's standard library
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD php -r "\$fp = @fsockopen('127.0.0.1', 4567, \$errno, \$errstr, 3); if (!\$fp) exit(1); fwrite(\$fp, 'GET /healthz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'); \$response = fread(\$fp, 1024); fclose(\$fp); exit(strpos(\$response, '200 OK') !== false ? 0 : 1);" || exit 1
+
 # Start both PHP-FPM and nginx
 CMD php-fpm -D && nginx -g 'daemon off;'

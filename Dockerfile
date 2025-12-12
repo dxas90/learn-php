@@ -32,8 +32,8 @@ RUN addgroup -g 1001 phpuser && \
 
 # Copy nginx config and create temp directories
 COPY nginx.conf /etc/nginx/nginx.conf
-RUN mkdir -p /tmp/nginx /var/lib/nginx/logs && \
-    chown -R phpuser:phpuser /tmp/nginx /var/lib/nginx
+RUN mkdir -p /tmp/nginx && \
+    chown -R phpuser:phpuser /tmp/nginx /var/log/nginx /var/lib/nginx
 
 # Configure PHP-FPM
 RUN sed -i 's/^;access.log = .*/access.log = \/dev\/null/' /usr/local/etc/php-fpm.d/www.conf && \

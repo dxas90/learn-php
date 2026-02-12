@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://homelab-schemas-epg.pages.dev/source.toolkit.fluxcd.io/gitrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: learn-php
+  namespace: flux-system
+spec:
+  interval: 30m
+  url: https://github.com/dxas90/learn-php.git
+  ref:
+    branch: main
+  ignore: |
+    # exclude
+    /*
+    # include
+    !k8s/

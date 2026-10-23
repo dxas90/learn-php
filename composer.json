@@ -3,13 +3,13 @@
     "description": "Small PHP microservice API (Symfony components) mirroring the Flask app endpoints",
     "require": {
         "php": "^8.1 || ^8.2 || ^8.3",
-        "symfony/http-foundation": "^6.3",
-        "symfony/routing": "^6.3",
+        "symfony/http-foundation": "^8.0",
+        "symfony/routing": "^8.0",
         "symfony/polyfill-ctype": "^1.27",
         "open-telemetry/sdk": "^1.1",
         "open-telemetry/exporter-otlp": "^1.1",
         "promphp/prometheus_client_php": "^2.10",
-        "symfony/http-client": "^7.3",
+        "symfony/http-client": "^8.0",
         "nyholm/psr7": "^1.8"
     },
     "autoload": {

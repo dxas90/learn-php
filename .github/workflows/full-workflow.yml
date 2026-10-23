@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Setup php
         uses: shivammathur/setup-php@v2
         with:
@@ -40,7 +40,7 @@ jobs:
         php-version: [8.2, 8.3]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Setup php ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
@@ -61,7 +61,7 @@ jobs:
     needs: test
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Setup php
         uses: shivammathur/setup-php@v2
         with:
@@ -82,10 +82,10 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: 'latest'
 
@@ -104,7 +104,7 @@ jobs:
           check_name: Helm Unit Test Results
 
       - name: Upload Helm Test Results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: helm-test-results
@@ -124,14 +124,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -139,7 +139,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -153,7 +153,7 @@ jobs:
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -178,7 +178,7 @@ jobs:
         if: github.event_name != 'pull_request'  # only run Trivy when image is pushed (not on PRs)
         id: trivy
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.extract-sha-tag.outputs.sha-tag }}
           format: 'sarif'
@@ -192,7 +192,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: 'latest'
 

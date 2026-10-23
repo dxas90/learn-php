@@ -16,9 +16,10 @@ tests:
   - it: should have correct pod selector
     asserts:
       - isSubset:
-          path: spec.podSelector
+          path: spec.podSelector.matchLabels
           content:
-            matchLabels: {}
+            app.kubernetes.io/name: learn-php
+            app.kubernetes.io/instance: RELEASE-NAME
 
   - it: should include correct labels
     asserts:

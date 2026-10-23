@@ -4,5 +4,14 @@ description: "Helm chart learn-php"
 type: application
 version: "0.1.0"
 appVersion: "v0.1.0"
+icon: "https://www.php.net/images/logos/new-php-logo.svg"
+home: "https://github.com/dxas90/learn-php"
+sources:
+  - "https://github.com/dxas90/learn-php"
+keywords:
+  - php
+  - api
+  - web
+  - kubernetes
 maintainers:
   - name: "Daniel Ramirez <dxas90@gmail.com>"

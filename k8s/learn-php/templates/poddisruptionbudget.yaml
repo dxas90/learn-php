@@ -1,13 +1,14 @@
-{{- if .Values.autoscaling.enabled }}
+{{- if .Values.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "base.fullname" . }}-pdb
+  name: {{ include "base.fullname" . }}
+  namespace: {{ .Values.namespace }}
   labels:
-{{ include "base.labels" $ | indent 4 }}
+    {{- include "base.labels" . | nindent 4 }}
 spec:
-  maxUnavailable: 1
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
-{{ include "base.labels" $ | indent 6 }}
+      {{- include "base.selectorLabels" . | nindent 6 }}
 {{- end }}

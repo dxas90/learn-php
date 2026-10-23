@@ -87,6 +87,10 @@ serviceAccount:
   automount: true
   annotations: {}
   name: ""
+  projectedToken:
+    enabled: false
+    expirationSeconds: 3600
+    audience: ""
 
 podSecurityContext:
   fsGroup: 65534
@@ -132,3 +136,35 @@ volumes:
     emptyDir: {}
   - name: tmp
     emptyDir: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+# PriorityClass is disabled by default.
+priorityClass:
+  enabled: false
+  name: ""
+  value: 1000000
+  globalDefault: false
+  preemptionPolicy: "PreemptLowerPriority"
+  description: "Priority class for learn-php pods"
+
+# PodDisruptionBudget for high availability
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# ServiceMonitor for Prometheus Operator
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+
+# NetworkPolicy
+networkPolicy:
+  enabled: true
+  ingress:
+    - {}
+  egress:
+    - {}

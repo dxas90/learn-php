@@ -18,7 +18,7 @@ This is a **cloud-native PHP microservice** built using a minimal Symfony compon
 ## Installation
 
 ### Prerequisites
-- php >= 8.1
+- php >= 8.4.1
 - composer
 
 ### Local Setup

@@ -2,7 +2,7 @@
     "name": "dxas90/learn-php-api",
     "description": "Small PHP microservice API (Symfony components) mirroring the Flask app endpoints",
     "require": {
-        "php": "^8.2 || ^8.3 || ^8.4",
+        "php": "^8.4.1",
         "symfony/http-foundation": "^8.0",
         "symfony/routing": "^8.0",
         "symfony/polyfill-ctype": "^1.27",

@@ -3,7 +3,6 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "base.fullname" . }}
-  namespace: {{ .Values.namespace }}
   labels:
     {{- include "base.labels" . | nindent 4 }}
 spec:

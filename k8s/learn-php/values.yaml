@@ -84,7 +84,7 @@ common:
 # Other values from the original chart are intentionally left as defaults.
 serviceAccount:
   create: true
-  automount: true
+  automount: false
   annotations: {}
   name: ""
   projectedToken:
@@ -140,14 +140,6 @@ volumes:
 nameOverride: ""
 fullnameOverride: ""
 
-# PriorityClass is disabled by default.
-priorityClass:
-  enabled: false
-  name: ""
-  value: 1000000
-  globalDefault: false
-  preemptionPolicy: "PreemptLowerPriority"
-  description: "Priority class for learn-php pods"
 
 # PodDisruptionBudget for high availability
 podDisruptionBudget:

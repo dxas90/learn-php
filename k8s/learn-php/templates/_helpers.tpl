@@ -48,6 +48,3 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- end }}
 
-{{- define "base.priorityClassName" -}}
-{{- default (include "base.fullname" .) .Values.priorityClass.name | trunc 63 | trimSuffix "-" }}
-{{- end }}

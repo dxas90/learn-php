@@ -1,5 +1,5 @@
 # Builder stage - install dependencies
-FROM php:8.3-fpm-alpine3.20 AS builder
+FROM php:8.4-fpm-alpine3.20 AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY composer.json composer.lock* ./
 RUN composer install --no-dev --no-interaction --no-scripts --prefer-dist --optimize-autoloader
 
 # Production stage - minimal Alpine with PHP-FPM and nginx
-FROM php:8.3-fpm-alpine3.20 AS production
+FROM php:8.4-fpm-alpine3.20 AS production
 
 WORKDIR /app
 
